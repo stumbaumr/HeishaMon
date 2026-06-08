@@ -1,14 +1,3 @@
-
-HeishaMon
-
-v4.1.6
-☀ Dark Mode
-↺ Home
-⇧ Firmware
-↻ Reboot
-⚙ Settings
-GitHub
-HeishaMon
 on System#Boot then
    #stateBeforeDHW = 1;
    #opModeBeforeDHW = 0;
