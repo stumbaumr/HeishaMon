@@ -66,21 +66,30 @@ on timer=10 then
       end
    end
 end
+on dhw_start then
+   #dhwStarted = 1;
+   #stateBeforeDHW = @Heatpump_State;
+   #OpModeBeforeDHW = @Operating_Mode_State;
+   if @Outside_Temp < 5 then
+      @SetForceDefrost = 1;
+      setTimer(22, 540);
+   else
+      setTimer(22, 35);
+   end
+end
 
 on @DHW_Power_Consumption then
    if @Heatpump_State == 1 && @Operating_Mode_State >= 3 && @DHW_Power_Consumption == 0 && ( @DHW_Temp >= @DHW_Target_Temp || @Main_Outlet_Temp >= @Main_Target_Temp ) then
-      @SetOperationMode = #OpModeBeforeDHW;
-      @SetHeatpump = #stateBeforeDHW;
+      setTimer(32, 1);
    end
 end
 on @Defrosting_State then
    if @Heatpump_State == 1 then
       if @Defrosting_State == 1 && @ThreeWay_Valve_State == 1 then
          #DefrostWhileDHW = 2;
-         @SetCurves = concat('{zone1:{heat:{target:{high:', #targetHighBeforeDHW ,',low:', #targetLowBeforeDHW ,'}}}}');
-         @SetMaxPumpDuty = #maxPumpDutyBeforeDHW;
-         @SetZ1HeatRequestTemperature = 5;
          @SetOperationMode = 0;
+         setTimer(30, 30);
+         setTimer(31, 60);
       end
       if @Defrosting_State == 0 && #DefrostWhileDHW == 2 then
          #DefrostWhileDHW = 1;
@@ -91,9 +100,7 @@ end
 on @ThreeWay_Valve_State then
    if @Heatpump_State == 1 then
       if @ThreeWay_Valve_State == 1 then
-         @SetPump = 1;
-         #maxPumpDutyBeforeDHW = @Max_Pump_Duty;
-         @SetMaxPumpDuty = #maxPumpDutyPower;
+         #dhwStarted = 1;
          $minDHWTarget = 43;
          $minOutside = -5;
          $maxDHWTarget = 50;
@@ -108,32 +115,42 @@ on @ThreeWay_Valve_State then
          if @DHW_Target_Temp != $newDHWTarget then
             @SetDHWTemp = $newDHWTarget;
          end
-         @SetOperationMode = #OpModeBeforeDHW + 4;
          #targetLowBeforeDHW = @Z1_Heat_Curve_Target_Low_Temp;
          #targetHighBeforeDHW = @Z1_Heat_Curve_Target_High_Temp;
          $targetAfterDHW = ( @DHW_Target_Temp + 6 );
          @SetCurves = concat('{zone1:{heat:{target:{high:', $targetAfterDHW ,',low:', $targetAfterDHW ,'}}}}');
+         setTimer(21, 31);
+         setTimer(22, 1);
       else
          if #DefrostWhileDHW == 1 then
-            @SetPump = 1;
-            setTimer(20, 240);
-            setTimer(21, 270);
-            setTimer(22, 300);
+            setTimer(30, 240);
+            setTimer(31, 270);
+            setTimer(32, 300);
          end
       end
    end
 end
-on timer=20 then
+on timer=21 then
+   #maxPumpDutyBeforeDHW = @Max_Pump_Duty;
+   @SetMaxPumpDuty = #maxPumpDutyPower;
+   @SetPump = 1;
+end
+on timer=22 then
+   @SetOperationMode = #OpModeBeforeDHW + 4;
+   @SetHeatpump = 1;
+   #dhwStarted = 0;
+end
+on timer=30 then
    @SetZ1HeatRequestTemperature = 5;
    @SetCurves = concat('{zone1:{heat:{target:{high:', #targetHighBeforeDHW ,',low:', #targetLowBeforeDHW ,'}}}}');
 end
-on timer=21 then
-   @SetOperationMode = #OpModeBeforeDHW;
-   @SetHeatpump = #stateBeforeDHW;
-end
-on timer=22 then
+on timer=31 then
    @SetMaxPumpDuty = #maxPumpDutyBeforeDHW;
    @SetPump = 0;
+end
+on timer=32 then
+   @SetOperationMode = #OpModeBeforeDHW;
+   @SetHeatpump = #stateBeforeDHW;
 end
 
 on @Main_Target_Temp then
@@ -194,29 +211,10 @@ on throttle then
    end
 end
 
-on dhw_start then
-   #dhwStarted = 1;
-   if @Outside_Temp < 5 then
-      @SetForceDefrost = 1;
-      setTimer(30, 540);
-   else
-      setTimer(30, 5);
-   end
-end
-on timer=30 then
-   #stateBeforeDHW = @Heatpump_State;
-   #OpModeBeforeDHW = @Operating_Mode_State;
-   @SetOperationMode = #OpModeBeforeDHW + 4;
-   @SetHeatpump = 1;
-   setTimer(31, 35);
-end
-on timer=31 then
-   #dhwStarted = 0;
-end
-
 on @Heat_Power_Consumption then
    if @Heatpump_State == 1 && @Operating_Mode_State == 0 && #offAtNight == 1 && @Z1_Heat_Request_Temp > 2 && @Heat_Power_Consumption == 0 && @Outside_Temp > 10 then
       #offAtNight = 2;
       @SetHeatpump = 0;
    end
 end
+
