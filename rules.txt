@@ -122,7 +122,7 @@ on @ThreeWay_Valve_State then
          setTimer(20, 30);
          setTimer(21, 60);
       else
-         if #defrostWhileDHW == 1 then
+         if #defrostWhileDHW < 2 then
             setTimer(22, 240);
             setTimer(23, 270);
             setTimer(24, 300);
