@@ -162,6 +162,7 @@ on @Main_Inlet_Temp then
 end
 on throttle then
    if @Heatpump_State == 1 then
+      $newQuietMode = @Quiet_Mode_Level;
       if @Operating_Mode_State % 2 == 0 || @ThreeWay_Valve_State == 1 then
          #roomDelta = 0;
          if @Outside_Temp < 7 && @Room_Thermostat_Temp > 22 then
