@@ -1,30 +1,10 @@
-# CLAUDE.md
+# Jeisha DHW / Radiators / Rowbuffer ruleset
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+A real, multi-year-tuned HeishaMon rules script (`rules.txt`) that automates a Panasonic Aquarea heat pump. There is no build, test, or lint tooling — the file is uploaded to HeishaMon through its web UI (`/rules`), and the firmware's embedded rules engine parses and runs it. Validation happens at upload time on the device; iterate by editing locally, uploading, and watching live MQTT values / the HeishaMon log.
 
-## What this repo is
+For the general rules-engine language (sigils, event blocks, built-in functions, device-side validation/safety behavior) see the `heishamon-rules` skill (`.claude/skills/heishamon-rules/SKILL.md`) or `README.md`'s "Rules functionality" section — this document only covers what's specific to *this* ruleset.
 
-A single HeishaMon rules script (`rules.txt`) that automates a Panasonic Aquarea heat pump via the [HeishaMon](https://github.com/heishamon/HeishaMon) firmware. There is no build, test, or lint tooling — the file is uploaded to HeishaMon through its web UI (`/rules`), and the firmware's embedded rules engine parses and runs it. Validation happens at upload time on the device; iterate by editing locally, uploading, and watching live MQTT values / the HeishaMon log.
-
-## Rules-engine language (essential to know before editing)
-
-The script is written in HeishaMon's event-driven DSL. The syntax is defined here [rules](https://github.com/CurlyMoo/rules) — always get the current version before any editing!! Pay attention to the sigils, because they determine variable lifetime and source:
-
-- `@Name` — **MQTT topic** exposed by HeishaMon. Read-only sensor topics (`@Outside_Temp`, `@DHW_Temp`, `@DHW_Target_Temp`, `@DHW_Heat_Delta`, `@DHW_Power_Consumption`, `@Heat_Power_Consumption`, `@Heatpump_State`, `@Operating_Mode_State`, `@ThreeWay_Valve_State`, `@Defrosting_State`, `@Main_Outlet_Temp`, `@Main_Inlet_Temp`, `@Main_Target_Temp`, `@Room_Thermostat_Temp`, `@Max_Pump_Duty`, `@Quiet_Mode_Level`, `@Z1_Heat_Request_Temp`, `@Z1_Cool_Request_Temp`, `@Z1_Heat_Curve_Target_Low_Temp`, `@Z1_Heat_Curve_Target_High_Temp`, …) and write-capable command topics (`@SetHeatpump`, `@SetOperationMode`, `@SetPump`, `@SetMaxPumpDuty`, `@SetDHWTemp`, `@SetCurves`, `@SetZ1HeatRequestTemperature`, `@SetZ1CoolRequestTemperature`, `@SetQuietMode`, `@SetForceDefrost`). Assigning to a `@Set…` topic publishes a command to the heat pump.
-- `#name` — **persistent global** variable, survives across rule firings. They do not survive a reboot. Persistent-global names in this script are lower-camelCase (`#opModeBeforeDHW`, `#defrostWhileDHW`, `#quietMinimumValue`, …) — match that casing exactly, the rules engine treats `#OpMode…` and `#opMode…` as different variables.
-- `$name` — **local** variable, scoped to a single `on … end` block.
-- `%name` — **system** variable supplied by the engine (`%hour`, `%minute`).
-
-Events / blocks:
-
-- `on System#Boot then … end` — runs once at firmware start and after saving rules. Used here to seed all `#…` defaults and arm the periodic timer.
-- `on timer=<id> then … end` — fires when a timer set by `setTimer(<id>, <seconds>)` elapses. Timer `10` is rearmed each tick to act as a 30-second clock; timers `20`, `21`, `22`, `23`, `24` are one-shot phases of the DHW production state machine.
-- `on @<Topic> then … end` — fires when that MQTT topic's value changes.
-- `on <name> then … end` — user-defined event, invoked by calling `<name>()` from another block (used here for `throttle` and `dhw_start`).
-
-Built-ins used: `setTimer(id, seconds)`, `concat(…)` (string concat — used to build the JSON payload for `@SetCurves`), `round()`, `floor()`. The `%` operator is integer modulo.
-
-A subtle parity convention to keep in mind when reading: **`@Operating_Mode_State` even == heating, odd == cooling**, and `+ 4` toggles the DHW-active variant — that's why the code does `@Operating_Mode_State % 2 == 0` to branch heat vs. cool and `#opModeBeforeDHW + 4` to enter DHW mode while preserving the underlying heat/cool selection.
+A subtle parity convention to keep in mind when reading this particular script: **`@Operating_Mode_State` even == heating, odd == cooling**, and `+ 4` toggles the DHW-active variant — that's why the code does `@Operating_Mode_State % 2 == 0` to branch heat vs. cool and `#opModeBeforeDHW + 4` to enter DHW mode while preserving the underlying heat/cool selection. Persistent-global names in this script are lower-camelCase (`#opModeBeforeDHW`, `#defrostWhileDHW`, `#quietMinimumValue`, …) — match that casing exactly, the rules engine treats `#OpMode…` and `#opMode…` as different variables.
 
 ## What the rules actually do (high-level)
 
