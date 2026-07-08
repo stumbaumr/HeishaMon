@@ -1,0 +1,29 @@
+on System#Boot then
+   setTimer(1, 0);
+end
+
+on @Compressor_Freq then
+   if @Compressor_Freq == 0 then
+      if @Defrosting_State == 0 then
+         if @Outside_Temp >= 2 then
+            if @Z1_Heat_Request_Temp == 0 then
+               @SetZ1HeatRequestTemperature = -5;
+               setTimer(1, 2700);
+            end
+         end
+      end
+   end
+end
+
+on timer=1 then
+   @SetZ1HeatRequestTemperature = 0;
+end
+
+on @Outside_Temp then
+   if @Outside_Temp < 2 then
+      if @Z1_Heat_Request_Temp == -5 then
+         setTimer(1, 0);
+         @SetZ1HeatRequestTemperature = 0;
+      end
+   end
+end
