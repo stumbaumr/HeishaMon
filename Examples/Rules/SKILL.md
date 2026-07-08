@@ -5,6 +5,14 @@ description: How to read and write HeishaMon rules-engine scripts (rules.txt) �
 
 A HeishaMon ruleset is a small event-driven DSL, parsed and run by the firmware's own interpreter (`HeishaMon/src/rules/rules.cpp` in this repo). There is no build/lint step for a ruleset itself — it's plain text uploaded through the device's web UI (`/rules`) or REST API. The canonical, most up-to-date grammar reference lives at https://github.com/CurlyMoo/rules — check there if something below seems out of date.
 
+## Coding Standards
+
+### Code Style for HeishaMon Rules
+- **3-space indentation** (not tabs)
+- **Single quotes** for strings
+- **LF line endings**
+- **UTF-8 charset**
+
 ## Sigils (variable lifetime and source)
 
 - `@Name` — an **MQTT topic** HeishaMon exposes. Read-only sensor topics (e.g. `@Outside_Temp`, `@Heatpump_State`, `@Operating_Mode_State`) reflect live heat pump state. Write-capable `@Set…` topics (e.g. `@SetHeatpump`, `@SetOperationMode`, `@SetDHWTemp`, `@SetCurves`) publish a command to the heat pump when assigned to. See `MQTT-Topics.md` / `Manage-Topics.md` in the repo root for the full topic list, and note the R/W split: reading a value and setting it go through different topic names.
