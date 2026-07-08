@@ -49,4 +49,4 @@ Standard precedence/associativity, parenthesization works as in normal math: `&&
 
 ## Worked example
 
-`Examples/Rules/Jeisha-DHW-Radiators-Rowbuffer/` contains a real multi-year-tuned ruleset (`rules.txt`) plus `RULES.md`, a block-by-block walkthrough of *why* it's written the way it is — DHW/defrost state machine, timer-budget discipline, pre-DHW state snapshotting, etc. Read `RULES.md` alongside `rules.txt` when you need to see these primitives combined into a non-trivial controller, or when extending that specific ruleset.
+`Examples/Rules/Jeisha-DHW-Radiators-Rowbuffer/` contains a real multi-year-tuned ruleset (`rules.txt`) plus `README.md`, a block-by-block walkthrough of *why* it's written the way it is — DHW/defrost state machine, timer-budget discipline, pre-DHW state snapshotting, etc. Read `README.md` alongside `rules.txt` when you need to see these primitives combined into a non-trivial controller, or when extending that specific ruleset.
