@@ -859,6 +859,17 @@ static void rules_print_stack(struct varstack_t *table) {
   }
 }
 
+static void rules_print_local_stacks(void) {
+  uint8_t x = 0;
+  for(x = 0; x < nrrules; x++) {
+    struct varstack_t *node = (struct varstack_t *)rules[x]->userdata;
+    if(node != NULL && node->nr > 0) {
+      logprintf_P(F("\n>>> local variables (%s)\n"), rules[x]->name);
+      rules_print_stack(node);
+    }
+  }
+}
+
 void rules_timer_cb(int nr) {
   char *name = NULL;
   int x = 0, i = 0;
@@ -885,8 +896,7 @@ void rules_timer_cb(int nr) {
     if(ret == 0) {
       logprintf_P(F("%s%d %s %d %s"), F("rule #"), rules[nr]->nr, F("was executed in"), timestamp.second - timestamp.first, F("microseconds"));
 
-      logprintf_P(F("\n>>> local variables\n"));
-      rules_print_stack((struct varstack_t *)rules[nr]->userdata);
+      rules_print_local_stacks();
       logprintf_P(F("\n>>> global variables\n"));
       rules_print_stack(&global_varstack);
       rules_free_stack();
@@ -1039,8 +1049,7 @@ void rules_event_cb(const char *prefix, const char *name) {
     if(ret == 0) {
       logprintf_P(F("%s%d %s %d %s"), F("rule #"), rules[nr]->nr, F("was executed in"), timestamp.second - timestamp.first, F("microseconds"));
 
-      logprintf_P(F("\n>>> local variables\n"));
-      rules_print_stack((struct varstack_t *)rules[nr]->userdata);
+      rules_print_local_stacks();
       logprintf_P(F("\n>>> global variables\n"));
       rules_print_stack(&global_varstack);
       rules_free_stack();
@@ -1064,8 +1073,7 @@ void rules_boot(void) {
     if(ret == 0) {
       logprintf_P(F("%s%d %s %d %s"), F("rule #"), rules[nr]->nr, F("was executed in"), timestamp.second - timestamp.first, F("microseconds"));
 
-      logprintf_P(F("\n>>> local variables\n"));
-      rules_print_stack((struct varstack_t *)rules[nr]->userdata);
+      rules_print_local_stacks();
       logprintf_P(F("\n>>> global variables\n"));
       rules_print_stack(&global_varstack);
       rules_free_stack();
