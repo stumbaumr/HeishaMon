@@ -3,7 +3,7 @@ name: heishamon-rules
 description: How to read and write HeishaMon rules-engine scripts (rules.txt) — the sigils (@/#/$/%), event/function blocks, built-in functions, and the device-side validation/safety behavior. Use before writing or editing any HeishaMon ruleset, including the worked examples under Examples/Rules.
 ---
 
-A HeishaMon ruleset is a small event-driven DSL, parsed and run by the firmware's own interpreter (`HeishaMon/src/rules/rules.cpp` in this repo). There is no build/lint step for a ruleset itself — it's plain text uploaded through the device's web UI (`/rules`) or REST API. The canonical, most up-to-date grammar reference lives at https://github.com/CurlyMoo/rules — check there if something below seems out of date.
+A HeishaMon ruleset is a small event-driven DSL, parsed and run by the firmware's own interpreter (`HeishaMon/src/rules/rules.cpp` in this repo). There is no build/lint step for a ruleset itself — it's plain text uploaded through the device's web UI (`/rules`) or REST API. For off-device checking there is a host harness in `Examples/Rules/harness/`: `./build.sh && ./harness <rules.txt> parse` runs the same parse/validation the device performs at upload (including `@Name` checks against the real topic/command tables), and its scenario mode records emitted `@Set…` commands so two ruleset versions can be diffed for behavioral equivalence — see its README. Use it before uploading any non-trivial ruleset edit. The canonical, most up-to-date grammar reference lives at https://github.com/CurlyMoo/rules — check there if something below seems out of date.
 
 ## Coding Standards
 
