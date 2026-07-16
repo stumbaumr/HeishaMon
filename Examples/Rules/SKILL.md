@@ -3,7 +3,7 @@ name: heishamon-rules
 description: How to read and write HeishaMon rules-engine scripts (rules.txt) — the sigils (@/#/$/%), event/function blocks, built-in functions, and the device-side validation/safety behavior. Use before writing or editing any HeishaMon ruleset, including the worked examples under Examples/Rules.
 ---
 
-A HeishaMon ruleset is a small event-driven DSL, parsed and run by the firmware's own interpreter (`HeishaMon/src/rules/rules.cpp` in this repo). There is no build/lint step for a ruleset itself — it's plain text uploaded through the device's web UI (`/rules`) or REST API. The canonical, most up-to-date grammar reference lives at https://github.com/CurlyMoo/rules — check there if something below seems out of date.
+A HeishaMon ruleset is a small event-driven DSL, parsed and run by the firmware's own interpreter (`HeishaMon/src/rules/rules.cpp` in this repo). There is no on-device build/lint step for a ruleset itself — it's plain text uploaded through the device's web UI (`/rules`) or REST API. Off-device, `Examples/Rules/harness/` compiles the real engine for the host PC and runs scripted regression scenarios (each example keeps its own under `tests/`; run all with `Examples/Rules/run_tests.sh`) — validate rule changes there before uploading. The canonical, most up-to-date grammar reference lives at https://github.com/CurlyMoo/rules — check there if something below seems out of date.
 
 ## Coding Standards
 
@@ -35,7 +35,7 @@ end
 
 - `on System#Boot then … end` — runs once at firmware start and again after a new ruleset is saved. The natural place to seed `#…` defaults and arm initial timers.
 - `on @<Topic> then … end` — fires whenever that MQTT topic's value changes.
-- `on timer=<id> then … end` — fires when a timer armed by `setTimer(<id>, <seconds>)` elapses. Timers are one-shot; re-arm inside the handler for a recurring tick. **Timer IDs are just integers you pick — don't reuse one for two unrelated purposes within a script**, or the handlers will collide.
+- `on timer=<id> then … end` — fires when a timer armed by `setTimer(<id>, <seconds>)` elapses. Timers are one-shot; re-arm inside the handler for a recurring tick. Re-arming a pending timer replaces its remaining delay, and **`setTimer(<id>, 0)` cancels a pending timer — it never fires** (arming a non-pending timer with `0` is a no-op); use `setTimer(<id>, 1)` to make a handler run (almost) immediately. **Timer IDs are just integers you pick — don't reuse one for two unrelated purposes within a script**, or the handlers will collide.
 - `on ?<param> then … end` — fires when a thermostat (OpenTherm) parameter changes.
 - `on <name> then … end` plus `<name>(args…)` — a user-defined function/event, callable from anywhere else in the script. Missing call arguments become `NULL` inside the block.
 
@@ -43,9 +43,11 @@ end
 
 Standard precedence/associativity, parenthesization works as in normal math: `&& || == >= > < <= - % * / + ^`. `%` is integer modulo (don't confuse with the `%hour`-style sigil above — context disambiguates).
 
+**`NULL` in conditions:** a bare comparison against a `NULL` variable is false (`if @X == 0 then` does not fire while `@X` is unset), but the same comparison *inside an `&&` chain* evaluates truthy (`if @X == 0 && 1 == 1 then` fires!). When combining conditions with `&&`/`||` over variables that might still be `NULL`, guard them with `isset()` first or use nested `if`s.
+
 ## Built-in functions
 
-`coalesce(…)` (first non-`NULL` argument, unlimited args), `max(…)`, `min(…)`, `isset(x)` (true iff `x` is still `NULL`), `round(x)`, `floor(x)`, `ceil(x)`, `setTimer(id, seconds)`, `print(x)`, `concat(…)` (string concatenation — handy for building a JSON-ish payload for a topic like `@SetCurves`), `gpio(pin)` / `gpio(pin, state)` (read or set a digital GPIO; on the ESP32-S3 board the two relays are `gpio(21, …)` and `gpio(47, …)`).
+`coalesce(…)` (first non-`NULL` argument, unlimited args), `max(…)`, `min(…)`, `isset(x)` (`1` once `x` has a value, `0` while it is still `NULL`), `round(x)`, `floor(x)`, `ceil(x)`, `setTimer(id, seconds)` (`0` seconds cancels — see Blocks above), `print(x)`, `concat(…)` (string concatenation — handy for building a JSON-ish payload for a topic like `@SetCurves`), `gpio(pin)` / `gpio(pin, state)` (read or set a digital GPIO; on the ESP32-S3 board the two relays are `gpio(21, …)` and `gpio(47, …)`).
 
 ## Device-side safety behavior (don't route around these)
 
