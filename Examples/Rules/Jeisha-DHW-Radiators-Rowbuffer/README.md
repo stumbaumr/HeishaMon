@@ -1,6 +1,6 @@
 # Jeisha DHW / Radiators / Rowbuffer ruleset
 
-A real, multi-year-tuned HeishaMon rules script (`rules.txt`) that automates a Panasonic Aquarea heat pump. There is no build, test, or lint tooling — the file is uploaded to HeishaMon through its web UI (`/rules`), and the firmware's embedded rules engine parses and runs it. Validation happens at upload time on the device; iterate by editing locally, uploading, and watching live MQTT values / the HeishaMon log.
+A real, multi-year-tuned HeishaMon rules script (`rules.txt`) that automates a Panasonic Aquarea heat pump. The file is uploaded to HeishaMon through its web UI (`/rules`), and the firmware's embedded rules engine parses and runs it; on-device validation happens at upload time. Before uploading, iterate **off-device**: the regression scenarios in `tests/` run this ruleset through the host-side harness (`../harness/`, see its README), simulating the DHW cycles, defrost interactions, schedule points, and throttle sweeps and asserting the exact `@Set…` commands emitted — run them all with `../run_tests.sh`. Then confirm on the device by watching live MQTT values / the HeishaMon log.
 
 For the general rules-engine language (sigils, event blocks, built-in functions, device-side validation/safety behavior) see the `heishamon-rules` skill (`Examples/Rules/SKILL.md`) or `README.md`'s "Rules functionality" section — this document only covers what's specific to *this* ruleset.
 
@@ -32,6 +32,7 @@ The script is one coordinated controller — editing one block in isolation will
 
 ## Editing guidance
 
+- **Run the tests after every edit** (`../run_tests.sh`, or a single scenario via `../harness/harness rules.txt tests/<scenario>.txt`), and add a scenario to `tests/` when you add behavior. The suite is what proved the last refactor behavior-preserving — keep it that way. Scenario preambles must `silent`-set every topic the ruleset reads (an unset topic reads `NULL` and corrupts `&&` conditions — the harness warns on stderr).
 - **Tunables live at the top of `System#Boot`.** Things like `#maxPumpDutyQuiet`, `#maxPumpDutyPower`, `#quietAtNight`, and the curve seeds are the intended knobs — change those rather than rewriting downstream blocks.
 - **DHW target curve** (the 43→50 °C interpolation) is inlined in `on @ThreeWay_Valve_State`; the four boundary constants (`$minDHWTarget`, `$minOutside`, `$maxDHWTarget`, `$maxOutside`) are local `$` vars set on each valve transition. The narrow holding curve written for that transition is `@DHW_Target_Temp + 6` (both high and low), written via the `setCurves(...)` helper; the endpoint clamping uses the built-in `min(...)`/`max(...)` functions.
 - **Don't reuse timer IDs.** `10`, `20`, `21`, `22`, `23`, `24` are taken and carry distinct semantics; pick a new ID for new timers.

@@ -2,7 +2,7 @@
 
 A small, self-contained HeishaMon ruleset (`rules.txt`) that discourages the compressor from restarting immediately after it stops, in order to reduce short-cycling and its wear on the compressor. It's a good minimal example of the timer-armed-suppression pattern and of using a sentinel value on an existing topic instead of a dedicated `#` global to track state.
 
-For the general rules-engine language (sigils, event blocks, built-in functions, device-side validation/safety behavior) see the `heishamon-rules` skill (`Examples/Rules/SKILL.md`).
+For the general rules-engine language (sigils, event blocks, built-in functions, device-side validation/safety behavior) see the `heishamon-rules` skill (`Examples/Rules/SKILL.md`). Regression scenarios for this ruleset live in `tests/` and run off-device through the host-side harness (`../harness/`, see its README) — run them all with `../run_tests.sh`, and add a scenario when you change behavior.
 
 ## What the rules do
 
