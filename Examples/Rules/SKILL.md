@@ -37,7 +37,7 @@ end
 - `on @<Topic> then … end` — fires whenever that MQTT topic's value changes.
 - `on timer=<id> then … end` — fires when a timer armed by `setTimer(<id>, <seconds>)` elapses. Timers are one-shot; re-arm inside the handler for a recurring tick. Re-arming a pending timer replaces its remaining delay, and **`setTimer(<id>, 0)` cancels a pending timer — it never fires** (arming a non-pending timer with `0` is a no-op); use `setTimer(<id>, 1)` to make a handler run (almost) immediately. **Timer IDs are just integers you pick — don't reuse one for two unrelated purposes within a script**, or the handlers will collide.
 - `on ?<param> then … end` — fires when a thermostat (OpenTherm) parameter changes.
-- `on <name> then … end` plus `<name>(args…)` — a user-defined function/event, callable from anywhere else in the script. Missing call arguments become `NULL` inside the block.
+- `on <name> then … end` plus `<name>(args…)` — a user-defined function/event, callable from anywhere else in the script. Missing call arguments become `NULL` inside the block. **Caveat (verified against the engine):** in a function block that declares `$` parameters, a top-level `@Set…` write placed directly before a built-in call (e.g. `setTimer(…)`) is executed out of order and silently dropped; the same statements inside an `if … then … end` work correctly. Prefer parameterless helper blocks that communicate through `#` globals (see the desired-state reconcile pattern under "Device-side safety behavior"), or wrap such statements in a condition.
 
 ## Operators
 
@@ -55,7 +55,23 @@ Standard precedence/associativity, parenthesization works as in normal math: `&&
 - If a valid-looking ruleset **crashes the device**, HeishaMon auto-disables rules on the next boot so you can recover without a boot loop. Don't try to defeat this from within a script.
 - Keep rulesets under roughly 10 KB (best practice from the firmware author, not a hard limit).
 - Sending a command to the heat pump is **asynchronous** — a `@Set…` write earlier in a block is not reflected in the corresponding read-topic later in the *same* firing. Always branch on the heat pump's own reported state, not on a value you just wrote.
-- The heat pump's serial link is slow. A single rule firing that sends a burst of `@Set…` commands can overrun HeishaMon's command throughput and drop some of them. Prefer spreading a burst of commands across a couple of staggered one-shot timers (see the worked example below for this pattern) over emitting many `@Set…` writes from one block.
+- Commands to the heat pump can be **silently dropped**, especially several in quick succession (`README.md` → "Communication reliability"). Budget: **no more than two `@Set…` commands within 30 seconds**, total across the whole ruleset — structure state machines so a single firing emits at most two commands and later phases run on one-shot timers staggered ≥ 30 s apart (the Jeisha worked example is built around exactly this). Separately, settings are most likely persisted to the heat pump's EEPROM, which has a finite write life — a few writes per hour per setting is fine, anything approaching once per second is far too much (`README.md` → "EEPROM warning").
+- For a command that must not stay dropped, use the **desired-state reconcile** pattern: keep the wanted value in a `#` global, write it from one parameterless helper block, and verify against the read-back topic on a timer, re-sending until it sticks:
+
+  ```
+  on applyHeatpump then
+     @SetHeatpump = #wantHeatpump;
+     setTimer(31, 30);
+  end
+
+  on timer=31 then
+     if @Heatpump_State != #wantHeatpump then
+        applyHeatpump();
+     end
+  end
+  ```
+
+  Change the setting from anywhere with `#wantHeatpump = 1; applyHeatpump();`. The retry stops by itself once the read-back matches, and the 30 s verify interval keeps even a permanently-refused command inside the two-commands-per-30-seconds budget (and safely beyond the read-back reporting latency, so it never re-sends a command that actually arrived). This is the generalized form of the retry example in `README.md` → "Communication reliability".
 
 ## Worked examples
 
