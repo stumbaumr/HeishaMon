@@ -27,6 +27,8 @@ Serial 1 (GPIO2) can be used to connect another serial line (GND and TX from the
 
 All received data will be sent to different MQTT topics (see below for topic descriptions). There is also a 'panasonic_heat_pump/log' MQTT topic which provides debug logging and a hexdump of the received packets (if enabled in the web portal).
 
+Some heatpumps (K/L series and newer) also send an additional "extra data block" with separate, more precise power consumption/production values. HeishaMon detects this automatically at boot and, if supported, publishes these as XTOP topics under 'panasonic_heat_pump/extra/...' (see [MQTT-Topics.md](MQTT-Topics.md) for the full list). If your heatpump doesn't support this extra data block, these topics simply won't appear. Note that on heatpumps that do support it, the "old" power topics (TOP15/16, TOP38-41, see MQTT-Topics.md) are no longer populated by the heatpump and will report bogus/invalid values (e.g. -200) — use the XTOP power values instead in that case.
+
 You can connect a 1wire network on GPIO4 which will report in seperate MQTT topics (panasonic_heat_pump/1wire/sensorid).
 
 The software is also able to measure Watt on a S0 port of two kWh meters. You only need to connect GPIO12 and GND to the S0 of one kWh meter and if you need a second kWh meter use GPIO14 and GND. It will report on MQTT topic panasonic_heat_pump/s0/Watt/1 and panasonic_heat_pump/s0/Watt/2 and also in the JSON output. You can replace 'Watt' in the previous topic with 'Watthour' to get consumption counter in WattHour (per mqtt message) or to 'WatthourTotal' to get the total consumption measured in WattHour. To sync the WatthourTotal with your kWh-meter, publish the correct value to MQTT to the panasonic_heat_pump/s0/WatthourTotal/1 or panasonic_heat_pump/s0/WatthourTotal/2 topic with the 'retain' option while heishamon is rebooting. Upon reboot, heishamon reads this value as the last known value to you can sync using this method.
@@ -141,6 +143,7 @@ Regular operators are supported with their standard associativity and precedence
 - `&&`: And
 - `||`: Or
 - `==`: Equals`
+- `!=`: Not Equals`
 - `>=`: Greater or equal then
 - `>`: Greater then
 - `<`: Lesser then
@@ -318,10 +321,9 @@ Use some 24 AWG shielded 4-conductors cable.
 
 
 ## The HeishaMon hardware itself
-The PCB's needed to connect to the heatpump are designed by project members and are listed below. The most important part of the hardware is a level shifting between 5v from the Panasonic to 3.3v of the HeishaMon and a GPIO13/GPIO15 enable line after boot. \
-[PCD Designs from the project members](PCB_Designs.md) \
-[Picture Wemos D1 beta](WEMOSD1.JPG) \
-[Picture ESP12-F](NewHeishamon.JPG)
+The PCB needed to connect to the heatpump is just a ESP8266 or a ESP32 (for the Heishamon Large it uses the ESP32-S3-MINI-1-N4R2) with some level shifting to get the 5v tx/rx down down 3.3v. That is the only thing to make it work.
+For the ESP8266 the Heishamon software uses the schematic as described in the [ESP8266 hardware design guide](https://documentation.espressif.com/esp8266_hardware_design_guidelines_en.pdf) figure 1-10c on page 12. The GPIO5 shown there is the enable on boot (or disabled when listen only is selected). But it is also possible to user a proper schmitt buffer instead of basic level shifting.
+The rest of Heishamon software is just adding more stuff, like Dallas 1wire, Opentherm etc.
 
 To make things easy you can order a completed PCB from some project members: \
 [Lectronz shop](https://lectronz.com/products/heishamon-communication-pcb) from Igor Ybema (aka TheHogNL) based in the Netherlands
