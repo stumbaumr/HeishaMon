@@ -62,7 +62,7 @@ These variables live inside a rule block. When a rule block finishes, these vari
 These are the same as listed in the Manage Topics documentation page and as found on the HeishaMon homepage. The ruleset also follows the R/W logic as used through the MQTT and REST API. That means that the read topics differ from the write topics. So reading the heatpump state is done through `@Heatpump_State`, changing the heatpump state through `@SetHeatpump`.
 
 - `%`: Datetime variables
-These can be used for date and time based rules. Currently `%hour` (0 - 23), `%minute` (0 - 59), `%month` (1 - 12), and `day` (1 - 7)  are supported. All are plain integers. A proper NTP configuration is needed to set the correct system date and time on the HeishaMon.
+These can be used for date and time based rules. Currently `%hour` (0 - 23), `%minute` (0 - 59), `%month` (1 - 12), and `%day` (1 - 7)  are supported. All are plain integers. A proper NTP configuration is needed to set the correct system date and time on the HeishaMon.
 
 - `?`: Thermostat parameters
 These variables reflect parameters read from the connected thermostat when using the OpenTherm functionality. When OpenTherm is supported this documentation will be extended with more precise information. The can check the opentherm tab for the variables that can be used. The names are the same for reading and writing, but not all values support reading and/or writing. The opentherm tab also lists this.
@@ -168,7 +168,7 @@ Returns the maximum value of the input parameters.
 Returns the minimum value of the input parameters.
 
 - `isset`
-Return boolean true when the input variable is still `NULL` in any other cases it will return false.
+Returns `1` when the input variable has a numeric value and `0` when it is still `NULL` (a string value also returns `0`). Use it to test for `NULL`: a comparison with `NULL` (e.g. `#g == NULL`) always results in `NULL`, which is false, so write `if isset(#g) == 0 then` instead.
 
 - `round`
 Rounds the input float to the nearest integer.
